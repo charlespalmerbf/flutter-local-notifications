@@ -9,22 +9,38 @@ class NotiService {
 
   // INITIALIZATION
   Future<void> initNotification() async {
-    if(_isInitialized) return; // If already initialized, return
+    if (_isInitialized) return; // If already initialized, return
 
     // PREPARE ANDROID NOTIFICATION SETTINGS
-    const initSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
     // PREPARE IOS NOTIFICATION SETTINGS
-    const initSettingsIOS = DarwinInitializationSettings(requestAlertPermission: true, requestBadgePermission: true, requestSoundPermission: true);
+    const initSettingsIOS = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true);
 
     // PREPARE INITIALIZATION SETTINGS
-    const initSettings = InitializationSettings(android: initSettingsAndroid, iOS: initSettingsIOS);
+    const initSettings = InitializationSettings(
+        android: initSettingsAndroid, iOS: initSettingsIOS);
 
     // INITIALIZE NOTIFICATION PLUGIN
     await notificationsPlugin.initialize(initSettings);
   }
 
   // NOTIFICATION DETAIL SETUP
+  NotificationDetails notificationDetails() {
+    return const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'daily_channel_id',
+          'Daily Notifications',
+          channelDescription: 'Daily Notification Channel',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails());
+  }
 
   // SHOW NOTIFICATION
 
