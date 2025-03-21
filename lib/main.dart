@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notification/noti_service.dart';
+import 'package:provider/provider.dart';
 import 'home_page.dart';
 
 void main() {
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // INITIALIZING NOTIFICATION SERVICE
+  NotiService().initNotification();
+
+  runApp(
+    // Providing NotiService to the entire app
+    Provider<NotiService>(
+      create: (_) => NotiService(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
