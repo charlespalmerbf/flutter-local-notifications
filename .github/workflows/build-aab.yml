@@ -1,0 +1,53 @@
+name: Build Flutter AAB
+
+on:
+  push:
+    branches:
+      - main # or your main branch name
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-aab:
+    name: Build AAB
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. Set up Flutter
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.5' # Specify a valid Flutter version
+        channel: 'stable'
+
+    # 3. Cache Flutter dependencies
+    - name: Cache Flutter dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.pub-cache
+          build
+        key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-flutter-
+
+    # 4. Install Flutter dependencies
+    - name: Install dependencies
+      run: flutter pub get
+
+    # 5. Build AAB
+    - name: Build release AAB
+      run: flutter build appbundle --release
+
+    # 6. Upload AAB as an artifact
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v4.6.2
+      with:
+        name: app-release-aab
+        path: build/app/outputs/bundle/release/app-release.aab
+        if-no-files-found: error # Ensure error is raised if AAB is missing
