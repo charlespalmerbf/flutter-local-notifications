@@ -49,25 +49,44 @@ jobs:
                   sed -i.bak "s/MARKETING_VERSION = [0-9.]\+;/MARKETING_VERSION = ${{ github.event.inputs.release_version }};/" ios/Runner.xcodeproj/project.pbxproj
                   rm -f ios/Runner.xcodeproj/project.pbxproj.bak
 
-            # Create release branch
-            - name: Create release branch
-              run: git checkout -b "release/v${{ github.event.inputs.release_version }}"
+            # Debug changes before commit
+            - name: Debug pubspec.yaml
+              run: cat pubspec.yaml
 
-            # Commit changes
-            - name: Commit changes
+            - name: Debug Android build.gradle
+              run: cat android/app/build.gradle
+
+            - name: Debug iOS project.pbxproj
+              run: cat ios/Runner.xcodeproj/project.pbxproj
+
+            # Check if there are changes before committing
+            - name: Check if there are changes
+              id: check_changes
+              run: |
+                  if [ -n "$(git status --porcelain)" ]; then
+                    echo "changes=true" >> $GITHUB_ENV
+                  else
+                    echo "changes=false" >> $GITHUB_ENV
+                  fi
+
+            # Commit changes only if changes exist
+            - name: Commit changes if present
+              if: env.changes == 'true'
               run: |
                   git add pubspec.yaml android/app/build.gradle ios/Runner.xcodeproj/project.pbxproj
                   git commit -m "build: v${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_code }}"
 
-            # Push changes to the release branch
+            # Push changes only if commit happened
             - name: Push changes
+              if: env.changes == 'true'
               uses: ad-m/github-push-action@master
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
                   branch: "release/v${{ github.event.inputs.release_version }}"
 
-            # Create Pull Request to main
+            # Create Pull Request to main if changes exist
             - name: Create Pull Requests
+              if: env.changes == 'true'
               run: |
                   curl -X POST \
                     -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
