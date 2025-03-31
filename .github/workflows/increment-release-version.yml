@@ -29,35 +29,83 @@ jobs:
               with:
                   fetch-depth: 0
 
+            # ✅ Update Flutter version in pubspec.yaml
             - name: Update Flutter version in pubspec.yaml
               run: |
                   sed -i.bak "s/^version: .*/version: ${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_code }}/" pubspec.yaml
+                  rm -f pubspec.yaml.bak
 
-            - name: Update version in Android build.gradle
+            # ✅ Update versionCode and versionName in version.properties
+            - name: Update Android version in version.properties
               run: |
-                  sed -i.bak "s/versionName \"[0-9.]\+\"/versionName \"${{ github.event.inputs.release_version }}\"/g" android/app/build.gradle
-                  sed -i.bak "s/versionCode [0-9]\+/versionCode ${{ github.event.inputs.release_code }}/g" android/app/build.gradle
+                  echo "versionCode=${{ github.event.inputs.release_code }}" > android/version.properties
+                  echo "versionName=${{ github.event.inputs.release_version }}" >> android/version.properties
 
+            # ✅ Update version in iOS project.pbxproj
             - name: Update version in iOS project.pbxproj
               run: |
                   sed -i.bak "s/CURRENT_PROJECT_VERSION = [0-9]\+;/CURRENT_PROJECT_VERSION = ${{ github.event.inputs.release_code }};/" ios/Runner.xcodeproj/project.pbxproj
                   sed -i.bak "s/MARKETING_VERSION = [0-9.]\+;/MARKETING_VERSION = ${{ github.event.inputs.release_version }};/" ios/Runner.xcodeproj/project.pbxproj
+                  rm -f ios/Runner.xcodeproj/project.pbxproj.bak
 
-            - name: Create release branch
-              run: git checkout -b "release/v${{ github.event.inputs.release_version }}"
+            # ✅ Install xmlstarlet for plist manipulation
+            - name: Install xmlstarlet
+              run: sudo apt-get install -y xmlstarlet
 
-            - name: Commit changes
+            # ✅ Update version in iOS Info.plist using xmlstarlet
+            - name: Update version in iOS Info.plist
               run: |
-                  git add pubspec.yaml android/app/build.gradle ios/Runner.xcodeproj/project.pbxproj
+                  xmlstarlet ed -u "/plist/dict/key[.='CFBundleShortVersionString']/following-sibling::string" -v "${{ github.event.inputs.release_version }}" ios/Runner/Info.plist
+                  xmlstarlet ed -u "/plist/dict/key[.='CFBundleVersion']/following-sibling::string" -v "${{ github.event.inputs.release_code }}" ios/Runner/Info.plist
+
+            # ✅ Debug iOS files after modification
+            - name: Debug iOS project.pbxproj after modification
+              run: |
+                  cat ios/Runner.xcodeproj/project.pbxproj
+
+            - name: Debug iOS Info.plist after modification
+              run: |
+                  cat ios/Runner/Info.plist
+
+            # ✅ Force add iOS files to git
+            - name: Force add iOS files
+              run: |
+                  git add -f ios/Runner.xcodeproj/project.pbxproj
+                  git add -f ios/Runner/Info.plist
+
+            # ✅ Debug git status
+            - name: Check git status
+              run: |
+                  git status
+
+            # ✅ Check for changes before committing
+            - name: Check if there are changes
+              id: check_changes
+              run: |
+                  if [ -n "$(git status --porcelain)" ]; then
+                    echo "changes=true" >> $GITHUB_ENV
+                  else
+                    echo "changes=false" >> $GITHUB_ENV
+                  fi
+
+            # ✅ Commit changes if there are any
+            - name: Commit changes if present
+              if: env.changes == 'true'
+              run: |
+                  git add pubspec.yaml android/version.properties ios/Runner.xcodeproj/project.pbxproj ios/Runner/Info.plist
                   git commit -m "build: v${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_code }}"
 
+            # ✅ Push changes if commit happened
             - name: Push changes
+              if: env.changes == 'true'
               uses: ad-m/github-push-action@master
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
                   branch: "release/v${{ github.event.inputs.release_version }}"
 
+            # ✅ Create Pull Request if changes exist
             - name: Create Pull Requests
+              if: env.changes == 'true'
               run: |
                   curl -X POST \
                     -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
@@ -71,6 +119,7 @@ jobs:
                   }
                   EOF
 
+                  # Create Pull Request to develop
                   curl -X POST \
                     -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                     -H "Accept: application/vnd.github.v3+json" \
