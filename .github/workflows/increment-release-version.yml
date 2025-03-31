@@ -29,37 +29,37 @@ jobs:
               with:
                   fetch-depth: 0
 
-            # Update pubspec.yaml for Flutter version
+            # ✅ Update Flutter version in pubspec.yaml
             - name: Update Flutter version in pubspec.yaml
               run: |
                   sed -i.bak "s/^version: .*/version: ${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_code }}/" pubspec.yaml
                   rm -f pubspec.yaml.bak
 
-            # Update Android versionCode and versionName in build.gradle
-            - name: Update version in Android build.gradle
+            # ✅ Update versionCode and versionName in local.properties
+            - name: Update Android version in local.properties
               run: |
-                  sed -i.bak "s/versionName \"[0-9.]\+\"/versionName \"${{ github.event.inputs.release_version }}\"/g" android/app/build.gradle
-                  sed -i.bak "s/versionCode [0-9]\+/versionCode ${{ github.event.inputs.release_code }}/g" android/app/build.gradle
-                  rm -f android/app/build.gradle.bak
+                  sed -i.bak "s/flutter.versionCode=.*/flutter.versionCode=${{ github.event.inputs.release_code }}/" android/local.properties
+                  sed -i.bak "s/flutter.versionName=.*/flutter.versionName=${{ github.event.inputs.release_version }}/" android/local.properties
+                  rm -f android/local.properties.bak
 
-            # Update iOS version and build number in project.pbxproj
+            # ✅ Update version in iOS project.pbxproj
             - name: Update version in iOS project.pbxproj
               run: |
                   sed -i.bak "s/CURRENT_PROJECT_VERSION = [0-9]\+;/CURRENT_PROJECT_VERSION = ${{ github.event.inputs.release_code }};/" ios/Runner.xcodeproj/project.pbxproj
                   sed -i.bak "s/MARKETING_VERSION = [0-9.]\+;/MARKETING_VERSION = ${{ github.event.inputs.release_version }};/" ios/Runner.xcodeproj/project.pbxproj
                   rm -f ios/Runner.xcodeproj/project.pbxproj.bak
 
-            # Debug changes before commit
+            # ✅ Debug modified files before commit
             - name: Debug pubspec.yaml
               run: cat pubspec.yaml
 
-            - name: Debug Android build.gradle
-              run: cat android/app/build.gradle
+            - name: Debug local.properties
+              run: cat android/local.properties
 
             - name: Debug iOS project.pbxproj
               run: cat ios/Runner.xcodeproj/project.pbxproj
 
-            # Check if there are changes before committing
+            # ✅ Check for changes before committing
             - name: Check if there are changes
               id: check_changes
               run: |
@@ -69,14 +69,14 @@ jobs:
                     echo "changes=false" >> $GITHUB_ENV
                   fi
 
-            # Commit changes only if changes exist
+            # ✅ Commit changes if there are any
             - name: Commit changes if present
               if: env.changes == 'true'
               run: |
-                  git add pubspec.yaml android/app/build.gradle ios/Runner.xcodeproj/project.pbxproj
+                  git add pubspec.yaml android/local.properties ios/Runner.xcodeproj/project.pbxproj
                   git commit -m "build: v${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_code }}"
 
-            # Push changes only if commit happened
+            # ✅ Push changes if commit happened
             - name: Push changes
               if: env.changes == 'true'
               uses: ad-m/github-push-action@master
@@ -84,7 +84,7 @@ jobs:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
                   branch: "release/v${{ github.event.inputs.release_version }}"
 
-            # Create Pull Request to main if changes exist
+            # ✅ Create Pull Request if changes exist
             - name: Create Pull Requests
               if: env.changes == 'true'
               run: |
