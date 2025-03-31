@@ -35,12 +35,11 @@ jobs:
                   sed -i.bak "s/^version: .*/version: ${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_code }}/" pubspec.yaml
                   rm -f pubspec.yaml.bak
 
-            # ✅ Update versionCode and versionName in local.properties
-            - name: Update Android version in local.properties
+            # ✅ Update versionCode and versionName in version.properties
+            - name: Update Android version in version.properties
               run: |
-                  sed -i.bak "s/flutter.versionCode=.*/flutter.versionCode=${{ github.event.inputs.release_code }}/" android/local.properties
-                  sed -i.bak "s/flutter.versionName=.*/flutter.versionName=${{ github.event.inputs.release_version }}/" android/local.properties
-                  rm -f android/local.properties.bak
+                  echo "versionCode=${{ github.event.inputs.release_code }}" > android/version.properties
+                  echo "versionName=${{ github.event.inputs.release_version }}" >> android/version.properties
 
             # ✅ Update version in iOS project.pbxproj
             - name: Update version in iOS project.pbxproj
@@ -53,8 +52,8 @@ jobs:
             - name: Debug pubspec.yaml
               run: cat pubspec.yaml
 
-            - name: Debug local.properties
-              run: cat android/local.properties
+            - name: Debug version.properties
+              run: cat android/version.properties
 
             - name: Debug iOS project.pbxproj
               run: cat ios/Runner.xcodeproj/project.pbxproj
@@ -73,7 +72,7 @@ jobs:
             - name: Commit changes if present
               if: env.changes == 'true'
               run: |
-                  git add pubspec.yaml android/local.properties ios/Runner.xcodeproj/project.pbxproj
+                  git add pubspec.yaml android/version.properties ios/Runner.xcodeproj/project.pbxproj
                   git commit -m "build: v${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_code }}"
 
             # ✅ Push changes if commit happened
