@@ -44,9 +44,15 @@ jobs:
             # ✅ Update version in iOS project.pbxproj
             - name: Update version in iOS project.pbxproj
               run: |
-                  sed -i.bak "s/CURRENT_PROJECT_VERSION = [0-9]\+;/CURRENT_PROJECT_VERSION = ${{ github.event.inputs.release_code }};/" ios/Runner.xcodeproj/project.pbxproj
-                  sed -i.bak "s/MARKETING_VERSION = [0-9.]\+;/MARKETING_VERSION = ${{ github.event.inputs.release_version }};/" ios/Runner.xcodeproj/project.pbxproj
-                  rm -f ios/Runner.xcodeproj/project.pbxproj.bak
+                  sed -i.bak "s/CURRENT_PROJECT_VERSION = [0-9]\+;/CURRENT_PROJECT_VERSION = ${{ github.event.inputs.release_code }};/" flutter_local_notifications/ios/Runner.xcodeproj/project.pbxproj
+                  sed -i.bak "s/MARKETING_VERSION = [0-9.]\+;/MARKETING_VERSION = ${{ github.event.inputs.release_version }};/" flutter_local_notifications/ios/Runner.xcodeproj/project.pbxproj
+                  rm -f flutter_local_notifications/ios/Runner.xcodeproj/project.pbxproj.bak
+
+            # ✅ Update version in iOS Info.plist
+            - name: Update version in iOS Info.plist
+              run: |
+                  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ github.event.inputs.release_version }}" flutter_local_notifications/ios/Runner/Info.plist
+                  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.event.inputs.release_code }}" flutter_local_notifications/ios/Runner/Info.plist
 
             # ✅ Debug modified files before commit
             - name: Debug pubspec.yaml
@@ -56,7 +62,10 @@ jobs:
               run: cat android/version.properties
 
             - name: Debug iOS project.pbxproj
-              run: cat ios/Runner.xcodeproj/project.pbxproj
+              run: cat flutter_local_notifications/ios/Runner.xcodeproj/project.pbxproj
+
+            - name: Debug iOS Info.plist
+              run: cat flutter_local_notifications/ios/Runner/Info.plist
 
             # ✅ Check for changes before committing
             - name: Check if there are changes
@@ -72,7 +81,7 @@ jobs:
             - name: Commit changes if present
               if: env.changes == 'true'
               run: |
-                  git add pubspec.yaml android/version.properties ios/Runner.xcodeproj/project.pbxproj
+                  git add pubspec.yaml android/version.properties flutter_local_notifications/ios/Runner.xcodeproj/project.pbxproj flutter_local_notifications/ios/Runner/Info.plist
                   git commit -m "build: v${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_code }}"
 
             # ✅ Push changes if commit happened
