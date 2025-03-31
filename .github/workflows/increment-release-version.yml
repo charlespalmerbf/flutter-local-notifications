@@ -29,34 +29,44 @@ jobs:
               with:
                   fetch-depth: 0
 
+            # Update pubspec.yaml for Flutter version
             - name: Update Flutter version in pubspec.yaml
               run: |
                   sed -i.bak "s/^version: .*/version: ${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_code }}/" pubspec.yaml
+                  rm -f pubspec.yaml.bak
 
+            # Update Android versionCode and versionName in build.gradle
             - name: Update version in Android build.gradle
               run: |
                   sed -i.bak "s/versionName \"[0-9.]\+\"/versionName \"${{ github.event.inputs.release_version }}\"/g" android/app/build.gradle
                   sed -i.bak "s/versionCode [0-9]\+/versionCode ${{ github.event.inputs.release_code }}/g" android/app/build.gradle
+                  rm -f android/app/build.gradle.bak
 
+            # Update iOS version and build number in project.pbxproj
             - name: Update version in iOS project.pbxproj
               run: |
                   sed -i.bak "s/CURRENT_PROJECT_VERSION = [0-9]\+;/CURRENT_PROJECT_VERSION = ${{ github.event.inputs.release_code }};/" ios/Runner.xcodeproj/project.pbxproj
                   sed -i.bak "s/MARKETING_VERSION = [0-9.]\+;/MARKETING_VERSION = ${{ github.event.inputs.release_version }};/" ios/Runner.xcodeproj/project.pbxproj
+                  rm -f ios/Runner.xcodeproj/project.pbxproj.bak
 
+            # Create release branch
             - name: Create release branch
               run: git checkout -b "release/v${{ github.event.inputs.release_version }}"
 
+            # Commit changes
             - name: Commit changes
               run: |
                   git add pubspec.yaml android/app/build.gradle ios/Runner.xcodeproj/project.pbxproj
                   git commit -m "build: v${{ github.event.inputs.release_version }}+${{ github.event.inputs.release_code }}"
 
+            # Push changes to the release branch
             - name: Push changes
               uses: ad-m/github-push-action@master
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
                   branch: "release/v${{ github.event.inputs.release_version }}"
 
+            # Create Pull Request to main
             - name: Create Pull Requests
               run: |
                   curl -X POST \
@@ -71,6 +81,7 @@ jobs:
                   }
                   EOF
 
+                  # Create Pull Request to develop
                   curl -X POST \
                     -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                     -H "Accept: application/vnd.github.v3+json" \
