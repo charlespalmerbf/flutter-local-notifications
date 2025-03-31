@@ -58,18 +58,16 @@ jobs:
                   xmlstarlet ed -u "/plist/dict/key[.='CFBundleShortVersionString']/following-sibling::string" -v "${{ github.event.inputs.release_version }}" ios/Runner/Info.plist
                   xmlstarlet ed -u "/plist/dict/key[.='CFBundleVersion']/following-sibling::string" -v "${{ github.event.inputs.release_code }}" ios/Runner/Info.plist
 
-            # ✅ Debug modified files before commit
-            - name: Debug pubspec.yaml
-              run: cat pubspec.yaml
+            # ✅ Debug changes before commit
+            - name: Check for changes in iOS files
+              run: |
+                  git diff ios/Runner.xcodeproj/project.pbxproj
+                  git diff ios/Runner/Info.plist
 
-            - name: Debug version.properties
-              run: cat android/version.properties
-
-            - name: Debug iOS project.pbxproj
-              run: cat ios/Runner.xcodeproj/project.pbxproj
-
-            - name: Debug iOS Info.plist
-              run: cat ios/Runner/Info.plist
+            # ✅ Debug git status
+            - name: Check git status
+              run: |
+                  git status
 
             # ✅ Check for changes before committing
             - name: Check if there are changes
