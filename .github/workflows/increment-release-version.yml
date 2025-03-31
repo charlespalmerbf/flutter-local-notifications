@@ -48,11 +48,15 @@ jobs:
                   sed -i.bak "s/MARKETING_VERSION = [0-9.]\+;/MARKETING_VERSION = ${{ github.event.inputs.release_version }};/" ios/Runner.xcodeproj/project.pbxproj
                   rm -f ios/Runner.xcodeproj/project.pbxproj.bak
 
-            # ✅ Update version in iOS Info.plist
+            # ✅ Install xmlstarlet for plist manipulation
+            - name: Install xmlstarlet
+              run: sudo apt-get install -y xmlstarlet
+
+            # ✅ Update version in iOS Info.plist using xmlstarlet
             - name: Update version in iOS Info.plist
               run: |
-                  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ github.event.inputs.release_version }}" ios/Runner/Info.plist
-                  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.event.inputs.release_code }}" ios/Runner/Info.plist
+                  xmlstarlet ed -u "/plist/dict/key[.='CFBundleShortVersionString']/following-sibling::string" -v "${{ github.event.inputs.release_version }}" ios/Runner/Info.plist
+                  xmlstarlet ed -u "/plist/dict/key[.='CFBundleVersion']/following-sibling::string" -v "${{ github.event.inputs.release_code }}" ios/Runner/Info.plist
 
             # ✅ Debug modified files before commit
             - name: Debug pubspec.yaml
